@@ -652,9 +652,30 @@ code {
 }
 
 .tel-lbl {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+.tel-lbl em {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: rgba(56, 189, 248, 0.75);
+}
+
+.tel-tile.invalid {
+  border-color: var(--warn);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.result-badge.warn {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
 .tel-tile input,

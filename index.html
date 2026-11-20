@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <div class="deck-shell">
@@ -259,27 +259,27 @@
 
               <div class="telemetry-grid">
                 <label class="tel-tile">
-                  <span class="tel-lbl">antiguedad_meses</span>
+                  <span class="tel-lbl">antiguedad_meses <em>1–120</em></span>
                   <input type="number" id="inAntiguedad" min="1" max="120" value="5" />
                 </label>
                 <label class="tel-tile">
-                  <span class="tel-lbl">cargo_mensual</span>
+                  <span class="tel-lbl">cargo_mensual <em>10–500</em></span>
                   <input type="number" id="inCargo" min="10" max="500" step="0.5" value="98.5" />
                 </label>
                 <label class="tel-tile">
-                  <span class="tel-lbl">llamadas_soporte</span>
+                  <span class="tel-lbl">llamadas_soporte <em>0–30</em></span>
                   <input type="number" id="inSoporte" min="0" max="30" value="5" />
                 </label>
                 <label class="tel-tile">
-                  <span class="tel-lbl">uso_datos_gb</span>
+                  <span class="tel-lbl">uso_datos_gb <em>0–500</em></span>
                   <input type="number" id="inDatos" min="0" max="500" step="0.1" value="8.2" />
                 </label>
                 <label class="tel-tile">
-                  <span class="tel-lbl">retrasos_pago</span>
+                  <span class="tel-lbl">retrasos_pago <em>0–24</em></span>
                   <input type="number" id="inRetrasos" min="0" max="24" value="2" />
                 </label>
                 <label class="tel-tile">
-                  <span class="tel-lbl">satisfaccion</span>
+                  <span class="tel-lbl">satisfaccion <em>1–10</em></span>
                   <input type="number" id="inSatisfaccion" min="1" max="10" step="0.5" value="2.0" />
                 </label>
                 <label class="tel-tile">
@@ -437,6 +437,6 @@
     </footer>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

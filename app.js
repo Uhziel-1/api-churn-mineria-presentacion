@@ -246,6 +246,54 @@
   const resFactors = document.getElementById("resFactors");
   const resAction = document.getElementById("resAction");
 
+  const FIELD_RULES = [
+    { key: "antiguedad_meses", el: inAntiguedad, min: 1, max: 120, integer: true },
+    { key: "cargo_mensual", el: inCargo, min: 10, max: 500, integer: false },
+    { key: "llamadas_soporte", el: inSoporte, min: 0, max: 30, integer: true },
+    { key: "uso_datos_gb", el: inDatos, min: 0, max: 500, integer: false },
+    { key: "retrasos_pago", el: inRetrasos, min: 0, max: 24, integer: true },
+    { key: "satisfaccion", el: inSatisfaccion, min: 1, max: 10, integer: false }
+  ];
+
+  function getLocalValidationErrors() {
+    const errors = [];
+    FIELD_RULES.forEach((rule) => {
+      const val = Number(rule.el.value);
+      const tile = rule.el.closest(".tel-tile");
+      let bad = Number.isNaN(val) || val < rule.min || val > rule.max;
+      if (!bad && rule.integer && !Number.isInteger(val)) bad = true;
+      if (tile) tile.classList.toggle("invalid", bad);
+      if (bad) {
+        const tipo = rule.integer ? "entero" : "número";
+        errors.push(`${rule.key}: debe ser ${tipo} entre ${rule.min} y ${rule.max} (recibido: ${rule.el.value || "vacío"}).`);
+      }
+    });
+    return errors;
+  }
+
+  function renderValidationError(errors, latencyText) {
+    resBadge.textContent = "HTTP 422 · Validación Pydantic";
+    resBadge.className = "result-badge warn";
+    resLatency.textContent = latencyText;
+    resProb.textContent = "422";
+    resRetention.textContent = "Entrada rechazada";
+    if (probMeterFill) {
+      probMeterFill.style.width = "0%";
+      probMeterFill.className = "prob-meter-fill critico";
+    }
+    resLabel.textContent = "Pydantic v2 bloqueó la petición antes de llegar al modelo";
+
+    resFactors.innerHTML = "";
+    errors.slice(0, 4).forEach((errMsg) => {
+      const li = document.createElement("li");
+      li.textContent = errMsg;
+      resFactors.appendChild(li);
+    });
+
+    resAction.textContent =
+      "Corrige los campos resaltados en ámbar para cumplir el contrato de OpenAPI / Pydantic v2 y vuelve a consultar.";
+  }
+
   function fillFormFromPreset(preset) {
     const p = preset.payload;
     if (resClientId) resClientId.textContent = p.id_cliente;
@@ -258,6 +306,7 @@
     inContrato.value = p.contrato;
     inPago.value = p.metodo_pago;
     inCiudad.value = p.ciudad;
+    document.querySelectorAll(".tel-tile.invalid").forEach((t) => t.classList.remove("invalid"));
   }
 
   function readPayloadFromForm() {
@@ -320,6 +369,7 @@
 
   runDemoBtn.addEventListener("click", async () => {
     const preset = PRESETS[activePresetKey];
+    const localErrors = getLocalValidationErrors();
     const payload = readPayloadFromForm();
     runDemoBtn.disabled = true;
     demoStatus.textContent = "Conectando con Render (si estaba en reposo puede tardar ~30 s)...";
@@ -335,18 +385,38 @@
         body: JSON.stringify(payload),
         signal: controller.signal
       });
+      const roundTripMs = Math.round(performance.now() - t0);
+
+      if (response.status === 422) {
+        const errBody = await response.json();
+        const details = Array.isArray(errBody.detail)
+          ? errBody.detail.map((d) => {
+              const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : "campo";
+              return `${field}: ${d.msg}`;
+            })
+          : ["Error de validación de esquema (HTTP 422)."];
+        renderValidationError(details, `HTTP 422 · Red: ${roundTripMs} ms`);
+        demoStatus.textContent =
+          "Pydantic v2 en Render rechazó los datos fuera de rango (HTTP 422).";
+        return;
+      }
+
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      const roundTripMs = Math.round(performance.now() - t0);
       renderResult(
         data,
         `API: ${data.tiempo_inferencia_ms} ms · Red: ${roundTripMs} ms`
       );
       demoStatus.textContent = "Respuesta recibida en vivo desde api-churn-mineria.onrender.com (HTTP 200).";
     } catch (err) {
-      renderResult(preset.fallback, "Modo respaldo local");
-      demoStatus.textContent =
-        "Sin respuesta inmediata de Render; mostrando resultado determinista verificado.";
+      if (localErrors.length > 0) {
+        renderValidationError(localErrors, "Validación local (422)");
+        demoStatus.textContent = "Datos fuera de rango según contrato Pydantic (1–120, etc.).";
+      } else {
+        renderResult(preset.fallback, "Modo respaldo local");
+        demoStatus.textContent =
+          "Sin respuesta inmediata de Render; mostrando resultado determinista verificado.";
+      }
     } finally {
       clearTimeout(timer);
       runDemoBtn.disabled = false;
