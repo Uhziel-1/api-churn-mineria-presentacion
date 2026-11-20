@@ -211,23 +211,76 @@
   };
 
   let activePresetKey = "critico";
-  const payloadSummary = document.getElementById("payloadSummary");
+  const inAntiguedad = document.getElementById("inAntiguedad");
+  const inCargo = document.getElementById("inCargo");
+  const inSoporte = document.getElementById("inSoporte");
+  const inDatos = document.getElementById("inDatos");
+  const inRetrasos = document.getElementById("inRetrasos");
+  const inSatisfaccion = document.getElementById("inSatisfaccion");
+  const inContrato = document.getElementById("inContrato");
+  const inPago = document.getElementById("inPago");
+  const inCiudad = document.getElementById("inCiudad");
+
   const runDemoBtn = document.getElementById("runDemoBtn");
   const demoStatus = document.getElementById("demoStatus");
   const resBadge = document.getElementById("resBadge");
   const resLatency = document.getElementById("resLatency");
   const resProb = document.getElementById("resProb");
+  const resRetention = document.getElementById("resRetention");
   const resLabel = document.getElementById("resLabel");
+  const resFactors = document.getElementById("resFactors");
   const resAction = document.getElementById("resAction");
+
+  function fillFormFromPreset(preset) {
+    const p = preset.payload;
+    inAntiguedad.value = p.antiguedad_meses;
+    inCargo.value = p.cargo_mensual;
+    inSoporte.value = p.llamadas_soporte;
+    inDatos.value = p.uso_datos_gb;
+    inRetrasos.value = p.retrasos_pago;
+    inSatisfaccion.value = p.satisfaccion;
+    inContrato.value = p.contrato;
+    inPago.value = p.metodo_pago;
+    inCiudad.value = p.ciudad;
+  }
+
+  function readPayloadFromForm() {
+    return {
+      id_cliente: "DEMO-S15-VIVO",
+      antiguedad_meses: Number(inAntiguedad.value),
+      cargo_mensual: Number(inCargo.value),
+      llamadas_soporte: Number(inSoporte.value),
+      uso_datos_gb: Number(inDatos.value),
+      retrasos_pago: Number(inRetrasos.value),
+      satisfaccion: Number(inSatisfaccion.value),
+      contrato: inContrato.value,
+      metodo_pago: inPago.value,
+      ciudad: inCiudad.value
+    };
+  }
 
   function renderResult(data, latencyText) {
     const pct = (Number(data.probabilidad_fuga) * 100).toFixed(2);
+    const retPct =
+      data.probabilidad_retencion !== undefined
+        ? (Number(data.probabilidad_retencion) * 100).toFixed(2)
+        : (100 - Number(pct)).toFixed(2);
     const isLow = Number(data.prediccion) === 0;
     resBadge.textContent = data.nivel_riesgo;
     resBadge.className = "result-badge " + (isLow ? "bajo" : "critico");
     resLatency.textContent = latencyText;
     resProb.textContent = `${pct} %`;
+    resRetention.textContent = `Retención: ${retPct} %`;
     resLabel.textContent = `${data.etiqueta} (predicción = ${data.prediccion})`;
+
+    resFactors.innerHTML = "";
+    const factors = Array.isArray(data.factores_clave) ? data.factores_clave.slice(0, 4) : [];
+    factors.forEach((f) => {
+      const li = document.createElement("li");
+      li.textContent = f;
+      resFactors.appendChild(li);
+    });
+
     resAction.textContent = data.accion_recomendada;
   }
 
@@ -237,14 +290,15 @@
       btn.classList.add("active");
       activePresetKey = btn.dataset.preset;
       const preset = PRESETS[activePresetKey];
-      payloadSummary.textContent = preset.summary;
+      fillFormFromPreset(preset);
       renderResult(preset.fallback, "Ref. determinista");
-      demoStatus.textContent = "Perfil listo. Pulsa el botón para consultar Render en vivo.";
+      demoStatus.textContent = "Perfil cargado. Edita cualquier campo o pulsa Consultar API.";
     });
   });
 
   runDemoBtn.addEventListener("click", async () => {
     const preset = PRESETS[activePresetKey];
+    const payload = readPayloadFromForm();
     runDemoBtn.disabled = true;
     demoStatus.textContent = "Conectando con Render (si estaba en reposo puede tardar ~30 s)...";
 
@@ -256,7 +310,7 @@
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preset.payload),
+        body: JSON.stringify(payload),
         signal: controller.signal
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
