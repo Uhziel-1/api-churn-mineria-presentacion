@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div class="deck-shell">
@@ -230,7 +230,7 @@
       </section>
 
       <!-- SLIDE 8: DEMO EN VIVO CON RENDER -->
-      <section class="slide" data-notes="Momento de demostración en vivo: primero seleccionar Cliente Crítico o Fidelizado y pulsar 'Consultar API en Render'. Si el servidor gratuito estaba dormido tarda ~30s en despertar; también podemos abrir Swagger /docs directo.">
+      <section class="slide" data-notes="Momento de demostración en vivo: los valores precargados son exactamente los del ejemplo de Swagger (CLI-2026-ALTO-RIESGO). Al pulsar Ejecutar POST /predict, Render responde en vivo con 84.85 % de probabilidad (Crítico), los factores clave y la acción comercial. También podemos cambiar al perfil Fidelizado (10.92 %) o abrir /docs directo.">
         <div class="slide-inner">
           <div class="demo-header">
             <div>
@@ -243,51 +243,55 @@
           </div>
 
           <div class="demo-stage">
+            <!-- Panel izquierdo: Entrada exacta de Swagger -->
             <div class="demo-controls">
-              <div class="preset-buttons">
-                <button type="button" class="preset-btn active" data-preset="critico">
-                  Cargar: Riesgo Crítico
-                </button>
-                <button type="button" class="preset-btn" data-preset="fidelizado">
-                  Cargar: Cliente Fidelizado
-                </button>
+              <div class="panel-topbar">
+                <div class="segmented-switch" role="group" aria-label="Perfiles preconfigurados">
+                  <button type="button" class="preset-btn active" data-preset="critico">
+                    Swagger (Crítico)
+                  </button>
+                  <button type="button" class="preset-btn" data-preset="fidelizado">
+                    Cliente Fidelizado
+                  </button>
+                </div>
+                <span class="id-pill" id="resClientId">CLI-2026-ALTO-RIESGO</span>
               </div>
 
-              <div class="form-grid-9">
-                <label class="field-item">
-                  <span>Antigüedad (meses)</span>
-                  <input type="number" id="inAntiguedad" min="1" max="120" value="3" />
+              <div class="telemetry-grid">
+                <label class="tel-tile">
+                  <span class="tel-lbl">antiguedad_meses</span>
+                  <input type="number" id="inAntiguedad" min="1" max="120" value="5" />
                 </label>
-                <label class="field-item">
-                  <span>Cargo mensual ($)</span>
-                  <input type="number" id="inCargo" min="10" max="500" step="0.5" value="115" />
+                <label class="tel-tile">
+                  <span class="tel-lbl">cargo_mensual</span>
+                  <input type="number" id="inCargo" min="10" max="500" step="0.5" value="98.5" />
                 </label>
-                <label class="field-item">
-                  <span>Llamadas soporte</span>
+                <label class="tel-tile">
+                  <span class="tel-lbl">llamadas_soporte</span>
                   <input type="number" id="inSoporte" min="0" max="30" value="5" />
                 </label>
-                <label class="field-item">
-                  <span>Uso datos (GB)</span>
-                  <input type="number" id="inDatos" min="0" max="500" step="0.1" value="6.2" />
+                <label class="tel-tile">
+                  <span class="tel-lbl">uso_datos_gb</span>
+                  <input type="number" id="inDatos" min="0" max="500" step="0.1" value="8.2" />
                 </label>
-                <label class="field-item">
-                  <span>Retrasos pago</span>
-                  <input type="number" id="inRetrasos" min="0" max="24" value="3" />
+                <label class="tel-tile">
+                  <span class="tel-lbl">retrasos_pago</span>
+                  <input type="number" id="inRetrasos" min="0" max="24" value="2" />
                 </label>
-                <label class="field-item">
-                  <span>Satisfacción (1-10)</span>
-                  <input type="number" id="inSatisfaccion" min="1" max="10" step="0.5" value="1.5" />
+                <label class="tel-tile">
+                  <span class="tel-lbl">satisfaccion</span>
+                  <input type="number" id="inSatisfaccion" min="1" max="10" step="0.5" value="2.0" />
                 </label>
-                <label class="field-item">
-                  <span>Contrato</span>
+                <label class="tel-tile">
+                  <span class="tel-lbl">contrato</span>
                   <select id="inContrato">
                     <option value="mensual" selected>mensual</option>
                     <option value="anual">anual</option>
                     <option value="bianual">bianual</option>
                   </select>
                 </label>
-                <label class="field-item">
-                  <span>Método de pago</span>
+                <label class="tel-tile">
+                  <span class="tel-lbl">metodo_pago</span>
                   <select id="inPago">
                     <option value="tarjeta" selected>tarjeta</option>
                     <option value="debito">debito</option>
@@ -295,8 +299,8 @@
                     <option value="efectivo">efectivo</option>
                   </select>
                 </label>
-                <label class="field-item">
-                  <span>Ciudad</span>
+                <label class="tel-tile">
+                  <span class="tel-lbl">ciudad</span>
                   <select id="inCiudad">
                     <option value="Lima" selected>Lima</option>
                     <option value="Piura">Piura</option>
@@ -308,28 +312,44 @@
               </div>
 
               <button type="button" id="runDemoBtn" class="run-btn">
-                Consultar API en Render
+                Ejecutar POST /predict en Render →
               </button>
-              <div id="demoStatus" class="demo-status">Edita cualquier dato o usa un perfil y consulta /predict</div>
+              <div id="demoStatus" class="demo-status">Datos idénticos al ejemplo oficial de Swagger UI.</div>
             </div>
 
+            <!-- Panel derecho: Respuesta ejecutiva estructurada -->
             <div class="demo-result-card" id="demoResult">
               <div class="result-top">
-                <span class="result-badge critico" id="resBadge">Crítico</span>
-                <span class="result-latency" id="resLatency">Ref. verificada</span>
+                <span class="result-badge critico" id="resBadge">Riesgo Crítico</span>
+                <span class="result-latency" id="resLatency">Ref. Swagger / Local</span>
               </div>
-              <div class="result-prob-row">
-                <div class="result-prob" id="resProb">77.54 %</div>
-                <div class="result-subprob" id="resRetention">Retención: 22.46 %</div>
+
+              <div class="score-hero">
+                <div class="result-prob-row">
+                  <div class="result-prob" id="resProb">84.85 %</div>
+                  <div class="result-subprob" id="resRetention">Retención: 15.15 %</div>
+                </div>
+                <div class="prob-meter" aria-hidden="true">
+                  <div id="probMeterFill" class="prob-meter-fill critico" style="width: 84.85%;"></div>
+                </div>
+                <div class="result-label" id="resLabel">Fuga Inminente · prediccion = 1</div>
               </div>
-              <div class="result-label" id="resLabel">Fuga Inminente (predicción = 1)</div>
-              <ul class="result-factors" id="resFactors">
-                <li>Baja satisfacción declarada (1.5/10)</li>
-                <li>Frecuencia crítica de llamadas a soporte (5)</li>
-                <li>Contrato mes a mes y mora (3 retrasos)</li>
-              </ul>
-              <div class="result-action" id="resAction">
-                Esperando consulta en vivo para mostrar recomendación del servidor...
+
+              <div class="factors-block">
+                <span class="block-title">Factores clave detectados</span>
+                <ul class="result-factors" id="resFactors">
+                  <li>Baja satisfacción declarada por el cliente (2.0/10)</li>
+                  <li>Frecuencia crítica de llamadas a soporte (5 incidentes)</li>
+                  <li>Contrato mes a mes (baja barrera de salida)</li>
+                  <li>Historial crediticio con mora (2 facturas con retraso)</li>
+                </ul>
+              </div>
+
+              <div class="action-callout">
+                <span class="block-title">Acción comercial recomendada</span>
+                <div class="result-action" id="resAction">
+                  ALERTA MÁXIMA: Contactar en menos de 24h vía Customer Success. Asignar resolución técnica prioritaria nivel 2 y ofrecer plan anual con 25% de descuento.
+                </div>
               </div>
             </div>
           </div>
@@ -417,6 +437,6 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

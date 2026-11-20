@@ -163,30 +163,37 @@
   const API_URL = "https://api-churn-mineria.onrender.com/predict";
   const PRESETS = {
     critico: {
-      summary: "Antigüedad: 3 meses · Cargo: $115 · Soporte: 5 llamadas · Satisfacción: 1.5 · Mensual",
+      summary: "Ejemplo oficial Swagger: 5 meses · $98.50 · 5 soporte · 8.2 GB · 2 mora · 2.0 sat.",
       payload: {
-        id_cliente: "CLI-CRITICO-99",
-        antiguedad_meses: 3,
-        cargo_mensual: 115.0,
+        id_cliente: "CLI-2026-ALTO-RIESGO",
+        antiguedad_meses: 5,
+        cargo_mensual: 98.5,
         llamadas_soporte: 5,
-        uso_datos_gb: 6.2,
-        retrasos_pago: 3,
-        satisfaccion: 1.5,
+        uso_datos_gb: 8.2,
+        retrasos_pago: 2,
+        satisfaccion: 2.0,
         contrato: "mensual",
         metodo_pago: "tarjeta",
         ciudad: "Lima"
       },
       fallback: {
-        probabilidad_fuga: 0.7754,
+        probabilidad_fuga: 0.8485,
+        probabilidad_retencion: 0.1515,
         prediccion: 1,
         etiqueta: "Fuga Inminente",
         nivel_riesgo: "Crítico",
+        factores_clave: [
+          "Baja satisfacción declarada por el cliente (2.0/10)",
+          "Frecuencia crítica de llamadas a soporte (5 incidentes reportados)",
+          "Contrato mes a mes (baja barrera de salida / sin permanencia)",
+          "Historial crediticio con mora (2 facturas con retraso)"
+        ],
         accion_recomendada:
-          "ALERTA MÁXIMA: Contactar en menos de 24h vía Customer Success. Ofrecer plan anual con 25 % de descuento y resolución prioritaria."
+          "ALERTA MÁXIMA: Contactar en menos de 24h vía Customer Success. Acciones: asignar resolución técnica prioritaria nivel 2; ofrecer plan anual con 25% de descuento; bono inmediato de 20 GB de datos."
       }
     },
     fidelizado: {
-      summary: "Antigüedad: 58 meses · Cargo: $48 · Soporte: 0 llamadas · Satisfacción: 9.5 · Bianual",
+      summary: "Cliente fiel: 58 meses · $48 · 0 soporte · 35 GB · 0 mora · 9.5 sat. · Bianual",
       payload: {
         id_cliente: "CLI-FIDELIZADO-01",
         antiguedad_meses: 58,
@@ -201,11 +208,17 @@
       },
       fallback: {
         probabilidad_fuga: 0.1092,
+        probabilidad_retencion: 0.8908,
         prediccion: 0,
         etiqueta: "Cliente Retenido",
         nivel_riesgo: "Bajo",
+        factores_clave: [
+          "Alta satisfacción percibida (9.5/10)",
+          "Contrato bianual consolidado (alta fidelización)",
+          "Cliente de largo recorrido (58 meses en la compañía)"
+        ],
         accion_recomendada:
-          "Cliente Fidelizado (Bajo Riesgo): Excelente candidato para programas VIP de lealtad o venta cruzada (upselling)."
+          "Cliente Fidelizado (Bajo Riesgo): Excelente candidato para programas VIP de lealtad, preventas exclusivas o venta cruzada (upselling)."
       }
     }
   };
@@ -223,16 +236,19 @@
 
   const runDemoBtn = document.getElementById("runDemoBtn");
   const demoStatus = document.getElementById("demoStatus");
+  const resClientId = document.getElementById("resClientId");
   const resBadge = document.getElementById("resBadge");
   const resLatency = document.getElementById("resLatency");
   const resProb = document.getElementById("resProb");
   const resRetention = document.getElementById("resRetention");
+  const probMeterFill = document.getElementById("probMeterFill");
   const resLabel = document.getElementById("resLabel");
   const resFactors = document.getElementById("resFactors");
   const resAction = document.getElementById("resAction");
 
   function fillFormFromPreset(preset) {
     const p = preset.payload;
+    if (resClientId) resClientId.textContent = p.id_cliente;
     inAntiguedad.value = p.antiguedad_meses;
     inCargo.value = p.cargo_mensual;
     inSoporte.value = p.llamadas_soporte;
@@ -245,8 +261,9 @@
   }
 
   function readPayloadFromForm() {
+    const presetId = PRESETS[activePresetKey]?.payload?.id_cliente || "DEMO-S15-VIVO";
     return {
-      id_cliente: "DEMO-S15-VIVO",
+      id_cliente: presetId,
       antiguedad_meses: Number(inAntiguedad.value),
       cargo_mensual: Number(inCargo.value),
       llamadas_soporte: Number(inSoporte.value),
@@ -266,12 +283,17 @@
         ? (Number(data.probabilidad_retencion) * 100).toFixed(2)
         : (100 - Number(pct)).toFixed(2);
     const isLow = Number(data.prediccion) === 0;
-    resBadge.textContent = data.nivel_riesgo;
-    resBadge.className = "result-badge " + (isLow ? "bajo" : "critico");
+    const tone = isLow ? "bajo" : "critico";
+    resBadge.textContent = `Riesgo ${data.nivel_riesgo}`;
+    resBadge.className = `result-badge ${tone}`;
     resLatency.textContent = latencyText;
     resProb.textContent = `${pct} %`;
     resRetention.textContent = `Retención: ${retPct} %`;
-    resLabel.textContent = `${data.etiqueta} (predicción = ${data.prediccion})`;
+    if (probMeterFill) {
+      probMeterFill.style.width = `${pct}%`;
+      probMeterFill.className = `prob-meter-fill ${tone}`;
+    }
+    resLabel.textContent = `${data.etiqueta} · prediccion = ${data.prediccion}`;
 
     resFactors.innerHTML = "";
     const factors = Array.isArray(data.factores_clave) ? data.factores_clave.slice(0, 4) : [];
@@ -291,8 +313,8 @@
       activePresetKey = btn.dataset.preset;
       const preset = PRESETS[activePresetKey];
       fillFormFromPreset(preset);
-      renderResult(preset.fallback, "Ref. determinista");
-      demoStatus.textContent = "Perfil cargado. Edita cualquier campo o pulsa Consultar API.";
+      renderResult(preset.fallback, "Ref. Swagger / Local");
+      demoStatus.textContent = preset.summary;
     });
   });
 
