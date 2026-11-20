@@ -1,0 +1,284 @@
+(() => {
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const progressBar = document.getElementById("progressBar");
+  const slideCounter = document.getElementById("slideCounter");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const notesBtn = document.getElementById("notesBtn");
+  const notesDrawer = document.getElementById("notesDrawer");
+  const notesText = document.getElementById("notesText");
+  const closeNotesBtn = document.getElementById("closeNotesBtn");
+
+  const overviewBtn = document.getElementById("overviewBtn");
+  const overviewModal = document.getElementById("overviewModal");
+  const overviewGrid = document.getElementById("overviewGrid");
+  const closeOverviewBtn = document.getElementById("closeOverviewBtn");
+
+  const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+  let currentIndex = 0;
+
+  function getSlideTitle(slide, idx) {
+    const heading = slide.querySelector("h1, h2");
+    if (heading) return heading.textContent.trim();
+    const quote = slide.querySelector(".hero-quote");
+    if (quote) return "El Reto de la Reproducibilidad";
+    return `Diapositiva ${idx + 1}`;
+  }
+
+  function buildOverview() {
+    overviewGrid.innerHTML = "";
+    slides.forEach((slide, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "overview-item" + (idx === currentIndex ? " active" : "");
+      btn.innerHTML = `<span>Slide ${idx + 1}</span><strong>${getSlideTitle(slide, idx)}</strong>`;
+      btn.addEventListener("click", () => {
+        goToSlide(idx);
+        toggleOverview(false);
+      });
+      overviewGrid.appendChild(btn);
+    });
+  }
+
+  function goToSlide(index) {
+    const clamped = Math.max(0, Math.min(index, slides.length - 1));
+    currentIndex = clamped;
+
+    slides.forEach((slide, idx) => {
+      slide.classList.toggle("active", idx === currentIndex);
+    });
+
+    const pct = ((currentIndex + 1) / slides.length) * 100;
+    progressBar.style.width = `${pct}%`;
+    slideCounter.textContent = `${currentIndex + 1} / ${slides.length}`;
+    notesText.textContent = slides[currentIndex].dataset.notes || "";
+
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex === slides.length - 1;
+
+    if (history.replaceState) {
+      history.replaceState(null, "", `#slide-${currentIndex + 1}`);
+    }
+  }
+
+  function nextSlide() {
+    if (currentIndex < slides.length - 1) goToSlide(currentIndex + 1);
+  }
+
+  function prevSlide() {
+    if (currentIndex > 0) goToSlide(currentIndex - 1);
+  }
+
+  function toggleNotes(forceState) {
+    const shouldShow =
+      typeof forceState === "boolean" ? forceState : notesDrawer.classList.contains("hidden");
+    notesDrawer.classList.toggle("hidden", !shouldShow);
+    notesBtn.classList.toggle("active", shouldShow);
+  }
+
+  function toggleOverview(forceState) {
+    const shouldShow =
+      typeof forceState === "boolean" ? forceState : overviewModal.classList.contains("hidden");
+    if (shouldShow) buildOverview();
+    overviewModal.classList.toggle("hidden", !shouldShow);
+    overviewBtn.classList.toggle("active", shouldShow);
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }
+
+  prevBtn.addEventListener("click", prevSlide);
+  nextBtn.addEventListener("click", nextSlide);
+  notesBtn.addEventListener("click", () => toggleNotes());
+  closeNotesBtn.addEventListener("click", () => toggleNotes(false));
+  overviewBtn.addEventListener("click", () => toggleOverview());
+  closeOverviewBtn.addEventListener("click", () => toggleOverview(false));
+  fullscreenBtn.addEventListener("click", toggleFullscreen);
+
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    if (!overviewModal.classList.contains("hidden")) {
+      if (e.key === "Escape") toggleOverview(false);
+      return;
+    }
+
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+      if (tag !== "BUTTON") {
+        e.preventDefault();
+        nextSlide();
+      }
+    } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+      e.preventDefault();
+      prevSlide();
+    } else if (e.key === "Home") {
+      goToSlide(0);
+    } else if (e.key === "End") {
+      goToSlide(slides.length - 1);
+    } else if (e.key.toLowerCase() === "n") {
+      toggleNotes();
+    } else if (e.key.toLowerCase() === "g") {
+      toggleOverview();
+    } else if (e.key.toLowerCase() === "f") {
+      toggleFullscreen();
+    }
+  });
+
+  // Navegación táctil simple (swipe horizontal)
+  let touchStartX = 0;
+  document.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    const deltaX = e.changedTouches[0].screenX - touchStartX;
+    if (deltaX < -50) nextSlide();
+    if (deltaX > 50) prevSlide();
+  }, { passive: true });
+
+  // Slide 6: Pilares interactivos
+  const pillarDetails = [
+    "<code>scikit-learn==1.9.1</code> · <code>fastapi==0.143.0</code> · <code>pydantic==2.14.0</code> · Validado con <code>pip check</code> (0 conflictos).",
+    "Origen <code>v1.0.0-raw</code> → <code>v2.0.0-limpio</code> con hashes SHA-256 en <code>DATA_VERSION.md</code> y semilla fija <code>SEED = 42</code>.",
+    "Guía replicable paso a paso (<code>venv</code>, <code>train.py</code>, <code>run_local.py</code>) y <code>7/7</code> pruebas automatizadas con <code>pytest</code>."
+  ];
+  const pillarDetailEl = document.getElementById("pillarDetail");
+  document.querySelectorAll(".pillar-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".pillar-card").forEach((c) => c.classList.remove("active"));
+      card.classList.add("active");
+      const idx = Number(card.dataset.pillar);
+      pillarDetailEl.innerHTML = pillarDetails[idx] || "";
+    });
+  });
+
+  // Slide 8: Demo funcional contra API real en Render
+  const API_URL = "https://api-churn-mineria.onrender.com/predict";
+  const PRESETS = {
+    critico: {
+      summary: "Antigüedad: 3 meses · Cargo: $115 · Soporte: 5 llamadas · Satisfacción: 1.5 · Mensual",
+      payload: {
+        id_cliente: "CLI-CRITICO-99",
+        antiguedad_meses: 3,
+        cargo_mensual: 115.0,
+        llamadas_soporte: 5,
+        uso_datos_gb: 6.2,
+        retrasos_pago: 3,
+        satisfaccion: 1.5,
+        contrato: "mensual",
+        metodo_pago: "tarjeta",
+        ciudad: "Lima"
+      },
+      fallback: {
+        probabilidad_fuga: 0.7754,
+        prediccion: 1,
+        etiqueta: "Fuga Inminente",
+        nivel_riesgo: "Crítico",
+        accion_recomendada:
+          "ALERTA MÁXIMA: Contactar en menos de 24h vía Customer Success. Ofrecer plan anual con 25 % de descuento y resolución prioritaria."
+      }
+    },
+    fidelizado: {
+      summary: "Antigüedad: 58 meses · Cargo: $48 · Soporte: 0 llamadas · Satisfacción: 9.5 · Bianual",
+      payload: {
+        id_cliente: "CLI-FIDELIZADO-01",
+        antiguedad_meses: 58,
+        cargo_mensual: 48.0,
+        llamadas_soporte: 0,
+        uso_datos_gb: 35.0,
+        retrasos_pago: 0,
+        satisfaccion: 9.5,
+        contrato: "bianual",
+        metodo_pago: "transferencia",
+        ciudad: "Arequipa"
+      },
+      fallback: {
+        probabilidad_fuga: 0.1092,
+        prediccion: 0,
+        etiqueta: "Cliente Retenido",
+        nivel_riesgo: "Bajo",
+        accion_recomendada:
+          "Cliente Fidelizado (Bajo Riesgo): Excelente candidato para programas VIP de lealtad o venta cruzada (upselling)."
+      }
+    }
+  };
+
+  let activePresetKey = "critico";
+  const payloadSummary = document.getElementById("payloadSummary");
+  const runDemoBtn = document.getElementById("runDemoBtn");
+  const demoStatus = document.getElementById("demoStatus");
+  const resBadge = document.getElementById("resBadge");
+  const resLatency = document.getElementById("resLatency");
+  const resProb = document.getElementById("resProb");
+  const resLabel = document.getElementById("resLabel");
+  const resAction = document.getElementById("resAction");
+
+  function renderResult(data, latencyText) {
+    const pct = (Number(data.probabilidad_fuga) * 100).toFixed(2);
+    const isLow = Number(data.prediccion) === 0;
+    resBadge.textContent = data.nivel_riesgo;
+    resBadge.className = "result-badge " + (isLow ? "bajo" : "critico");
+    resLatency.textContent = latencyText;
+    resProb.textContent = `${pct} %`;
+    resLabel.textContent = `${data.etiqueta} (predicción = ${data.prediccion})`;
+    resAction.textContent = data.accion_recomendada;
+  }
+
+  document.querySelectorAll(".preset-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".preset-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activePresetKey = btn.dataset.preset;
+      const preset = PRESETS[activePresetKey];
+      payloadSummary.textContent = preset.summary;
+      renderResult(preset.fallback, "Ref. determinista");
+      demoStatus.textContent = "Perfil listo. Pulsa el botón para consultar Render en vivo.";
+    });
+  });
+
+  runDemoBtn.addEventListener("click", async () => {
+    const preset = PRESETS[activePresetKey];
+    runDemoBtn.disabled = true;
+    demoStatus.textContent = "Conectando con Render (si estaba en reposo puede tardar ~30 s)...";
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+    const t0 = performance.now();
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(preset.payload),
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const roundTripMs = Math.round(performance.now() - t0);
+      renderResult(
+        data,
+        `API: ${data.tiempo_inferencia_ms} ms · Red: ${roundTripMs} ms`
+      );
+      demoStatus.textContent = "Respuesta recibida en vivo desde api-churn-mineria.onrender.com (HTTP 200).";
+    } catch (err) {
+      renderResult(preset.fallback, "Modo respaldo local");
+      demoStatus.textContent =
+        "Sin respuesta inmediata de Render; mostrando resultado determinista verificado.";
+    } finally {
+      clearTimeout(timer);
+      runDemoBtn.disabled = false;
+    }
+  });
+
+  // Inicializar en slide del hash si existe
+  const match = window.location.hash.match(/^#slide-(\d+)$/);
+  const initial = match ? Number(match[1]) - 1 : 0;
+  goToSlide(initial);
+})();

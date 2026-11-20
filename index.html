@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reproducibilidad y Despliegue de API Churn | Minería de Datos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <!-- Barra de progreso superior sutil -->
+    <div class="progress-track" aria-hidden="true">
+      <div id="progressBar" class="progress-fill"></div>
+    </div>
+
+    <!-- Escenario fijo 16:9 / Viewport completo estilo PPT -->
+    <main id="deck" class="deck" aria-live="polite">
+
+      <!-- SLIDE 1: PORTADA -->
+      <section class="slide active" data-notes="Saludar al docente y compañeros. Presentar el proyecto: no solo construimos un modelo de fuga de clientes, sino una API REST en producción totalmente reproducible desde GitHub por cualquier persona.">
+        <div class="slide-inner center-layout">
+          <div class="pill-tag">Minería de Datos · Semana 15 · UPeU 2026-2</div>
+          <h1 class="hero-title">API de Predicción de Churn</h1>
+          <p class="hero-subtitle">Reproducibilidad Técnica y Despliegue Funcional</p>
+
+          <div class="hero-meta-grid">
+            <div class="meta-chip">
+              <span class="meta-label">Repositorio</span>
+              <code>github.com/Uhziel-1/api-churn-mineria</code>
+            </div>
+            <div class="meta-chip">
+              <span class="meta-label">Producción (Render)</span>
+              <code>api-churn-mineria.onrender.com</code>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 2: PROBLEMA DE NEGOCIO -->
+      <section class="slide" data-notes="Explicar el problema real: en telecomunicaciones cuesta mucho más captar un cliente nuevo que retener uno actual. El modelo identifica quién se va a ir y qué acción comercial tomar hoy mismo.">
+        <div class="slide-inner">
+          <span class="slide-kicker">01 · Contexto del Negocio</span>
+          <h2>¿Qué resuelve esta API?</h2>
+
+          <div class="split-2">
+            <ul class="clean-bullets">
+              <li><strong>Anticipar fuga:</strong> Detectar riesgo antes de cancelar.</li>
+              <li><strong>Explicar motivos:</strong> Identificar factores clave por cliente.</li>
+              <li><strong>Actuar rápido:</strong> Sugerir acciones de retención inmediata.</li>
+            </ul>
+
+            <div class="stat-showcase">
+              <div class="big-stat">
+                <span class="stat-number accent">2,000</span>
+                <span class="stat-caption">Clientes históricos evaluados</span>
+              </div>
+              <div class="big-stat">
+                <span class="stat-number warn">31.5 %</span>
+                <span class="stat-caption">Tasa real de fuga (Churn)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 3: LINAJE Y LIMPIEZA DE DATOS -->
+      <section class="slide" data-notes="Recordar lo visto en S11 y S12: el dataset original tenía id_cliente y 4 columnas de ruido sintético (ruido_1 a ruido_4). Para pasar a producción, se documentó su eliminación dejando solo 9 variables reales de negocio.">
+        <div class="slide-inner">
+          <span class="slide-kicker">02 · Linaje de Datos (S11 → S14)</span>
+          <h2>De Datos de Laboratorio a Producción</h2>
+
+          <div class="lineage-board">
+            <div class="lineage-card muted-card">
+              <div class="card-badge">v1.0.0-raw (S11)</div>
+              <div class="card-metric">15 columnas</div>
+              <p class="card-short">Incluía <code>id_cliente</code> y <code>ruido_1..4</code></p>
+            </div>
+
+            <div class="flow-arrow" aria-hidden="true">→</div>
+
+            <div class="lineage-card highlight-card">
+              <div class="card-badge success">v2.0.0-limpio (S14)</div>
+              <div class="card-metric">9 variables + target</div>
+              <p class="card-short">Solo atributos reales de negocio</p>
+            </div>
+          </div>
+
+          <div class="feature-strip">
+            <span>antiguedad_meses</span>
+            <span>cargo_mensual</span>
+            <span>llamadas_soporte</span>
+            <span>uso_datos_gb</span>
+            <span>retrasos_pago</span>
+            <span>satisfaccion</span>
+            <span>contrato</span>
+            <span>metodo_pago</span>
+            <span>ciudad</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 4: PIPELINE Y MODELO -->
+      <section class="slide" data-notes="El modelo no es un archivo suelto: es un Pipeline completo de Scikit-Learn (ColumnTransformer + RandomForest). Esto evita fuga de datos y asegura que las mismas transformaciones se apliquen en producción.">
+        <div class="slide-inner">
+          <span class="slide-kicker">03 · Modelado Machine Learning</span>
+          <h2>Pipeline sin Fuga de Datos</h2>
+
+          <div class="pipeline-flow">
+            <div class="pipe-node">
+              <span class="pipe-step">1. Numéricas (6)</span>
+              <span class="pipe-desc">Imputación Mediana</span>
+            </div>
+            <div class="pipe-plus">+</div>
+            <div class="pipe-node">
+              <span class="pipe-step">2. Categóricas (3)</span>
+              <span class="pipe-desc">Moda + OneHotEncoder</span>
+            </div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-main">
+              <span class="pipe-step">3. Random Forest</span>
+              <span class="pipe-desc">120 árboles · depth=8 · seed=42</span>
+            </div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi-box">
+              <span class="kpi-val accent">0.8015</span>
+              <span class="kpi-lbl">ROC-AUC (5-fold CV)</span>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-val success">0.8006</span>
+              <span class="kpi-lbl">ROC-AUC (Holdout 75/25)</span>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-val">9</span>
+              <span class="kpi-lbl">Variables productivas</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 5: POR QUÉ REPRODUCIBILIDAD -->
+      <section class="slide" data-notes="Aquí respondemos al objetivo central de la Semana 14: que el docente o cualquier ingeniero clone el repositorio de GitHub y obtenga exactamente los mismos resultados sin llamarnos.">
+        <div class="slide-inner center-layout">
+          <span class="slide-kicker">04 · El Reto de la Reproducibilidad</span>
+          <blockquote class="hero-quote">
+            “En mi computadora sí funciona”<br />
+            <span class="quote-sub">no es válido en Ciencia de Datos.</span>
+          </blockquote>
+
+          <div class="risk-row">
+            <div class="risk-pill">Versiones sueltas (<code>&gt;=</code>) rompen <code>.joblib</code></div>
+            <div class="risk-pill">Modelos compilados sin saber su dataset origen</div>
+            <div class="risk-pill">Proyectos sin guía clara de arranque</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 6: LOS 3 PILARES (INTERACTIVO) -->
+      <section class="slide" data-notes="Explicar cada pilar haciendo clic en las tarjetas: 1) requirements.txt fijado con == para Python 3.12, 2) carpeta data/ con hashes SHA-256 y script train.py con seed=42, 3) README paso a paso y 7 pruebas pytest.">
+        <div class="slide-inner">
+          <span class="slide-kicker">05 · Solución Implementada</span>
+          <h2>Los 3 Pilares de Reproducibilidad</h2>
+
+          <div class="pillars-grid" id="pillarsGrid">
+            <button type="button" class="pillar-card active" data-pillar="0">
+              <span class="pillar-num">01</span>
+              <h3>Entorno Fijado</h3>
+              <p><code>requirements.txt</code> exacto (<code>==</code>) para Python 3.12.</p>
+            </button>
+
+            <button type="button" class="pillar-card" data-pillar="1">
+              <span class="pillar-num">02</span>
+              <h3>Datos Versionados</h3>
+              <p><code>data/</code>, hashes SHA-256 y <code>train.py</code> determinista.</p>
+            </button>
+
+            <button type="button" class="pillar-card" data-pillar="2">
+              <span class="pillar-num">03</span>
+              <h3>Guía y Pruebas</h3>
+              <p><code>README.md</code> paso a paso + 7 tests <code>pytest</code>.</p>
+            </button>
+          </div>
+
+          <div class="pillar-detail-bar" id="pillarDetail">
+            <code>scikit-learn==1.9.1</code> · <code>fastapi==0.143.0</code> · <code>pydantic==2.14.0</code> · Validado con <code>pip check</code> (0 conflictos).
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7: ARQUITECTURA FASTAPI -->
+      <section class="slide" data-notes="Explicar cómo funciona la API en producción: recibe JSON, Pydantic v2 valida rangos y categorías (rechaza con 422 si hay error), el pipeline en memoria predice y la lógica de negocio agrega recomendación comercial.">
+        <div class="slide-inner">
+          <span class="slide-kicker">06 · Arquitectura de Servicio</span>
+          <h2>API REST con FastAPI y Swagger</h2>
+
+          <div class="arch-flow">
+            <div class="arch-box">
+              <span class="arch-title">Cliente / Swagger</span>
+              <span class="arch-sub">JSON Request</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box">
+              <span class="arch-title">Pydantic v2</span>
+              <span class="arch-sub">Valida tipos y rangos</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box arch-accent">
+              <span class="arch-title">Pipeline .joblib</span>
+              <span class="arch-sub">Carga única (lifespan)</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box">
+              <span class="arch-title">Respuesta Enriquecida</span>
+              <span class="arch-sub">Riesgo + Acción</span>
+            </div>
+          </div>
+
+          <div class="endpoints-row">
+            <span class="ep-chip"><b class="get">GET</b> /health</span>
+            <span class="ep-chip"><b class="get">GET</b> /model-info</span>
+            <span class="ep-chip"><b class="post">POST</b> /predict</span>
+            <span class="ep-chip"><b class="post">POST</b> /predict/batch</span>
+            <span class="ep-chip"><b class="doc">UI</b> /docs (Swagger)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8: DEMO EN VIVO CON RENDER -->
+      <section class="slide" data-notes="Momento de demostración en vivo: primero seleccionar Cliente Crítico o Fidelizado y pulsar 'Consultar API en Render'. Si el servidor gratuito estaba dormido tarda ~30s en despertar; también podemos abrir Swagger /docs directo.">
+        <div class="slide-inner">
+          <div class="demo-header">
+            <div>
+              <span class="slide-kicker">07 · Funcionalidad en Producción</span>
+              <h2>Demo en Vivo contra Render</h2>
+            </div>
+            <a class="swagger-link" href="https://api-churn-mineria.onrender.com/docs" target="_blank" rel="noopener noreferrer">
+              Abrir Swagger (/docs) ↗
+            </a>
+          </div>
+
+          <div class="demo-stage">
+            <div class="demo-controls">
+              <p class="demo-label">Selecciona un perfil de prueba:</p>
+              <div class="preset-buttons">
+                <button type="button" class="preset-btn active" data-preset="critico">
+                  Cliente Riesgo Crítico
+                </button>
+                <button type="button" class="preset-btn" data-preset="fidelizado">
+                  Cliente Fidelizado
+                </button>
+              </div>
+
+              <div class="payload-summary" id="payloadSummary">
+                Antigüedad: 3 meses · Cargo: $115 · Soporte: 5 llamadas · Satisfacción: 1.5 · Mensual
+              </div>
+
+              <button type="button" id="runDemoBtn" class="run-btn">
+                Consultar API en Render
+              </button>
+              <div id="demoStatus" class="demo-status">Listo para enviar petición HTTPS a /predict</div>
+            </div>
+
+            <div class="demo-result-card" id="demoResult">
+              <div class="result-top">
+                <span class="result-badge critico" id="resBadge">Crítico</span>
+                <span class="result-latency" id="resLatency">Ref. verificada</span>
+              </div>
+              <div class="result-prob" id="resProb">77.54 %</div>
+              <div class="result-label" id="resLabel">Fuga Inminente (predicción = 1)</div>
+              <div class="result-action" id="resAction">
+                Esperando consulta en vivo para mostrar recomendación del servidor...
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9: VALIDACIÓN Y CIERRE -->
+      <section class="slide" data-notes="Cerrar resumiendo la verificación determinista local: cualquier persona que ejecute train.py y pytest obtiene exactamente 77.54 % y 10.92 %, con los 7 tests pasando. Agradecer y quedar atento a preguntas.">
+        <div class="slide-inner center-layout">
+          <span class="slide-kicker">08 · Verificación y Cierre</span>
+          <h2>Resultado 100 % Reproducible</h2>
+
+          <div class="checks-row">
+            <div class="check-card">
+              <span class="check-ok">✓</span>
+              <div>
+                <strong>train.py (SEED=42)</strong>
+                <p>Regenera datos y modelo idéntico (77.54 % / 10.92 %)</p>
+              </div>
+            </div>
+            <div class="check-card">
+              <span class="check-ok">✓</span>
+              <div>
+                <strong>pytest (7 / 7 PASSED)</strong>
+                <p>Endpoints, validación 422 y batch verificados</p>
+              </div>
+            </div>
+            <div class="check-card">
+              <span class="check-ok">✓</span>
+              <div>
+                <strong>Render + GitHub</strong>
+                <p>Código versionado y API pública operativa</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="closing-links">
+            <a class="btn-outline" href="https://github.com/Uhziel-1/api-churn-mineria" target="_blank" rel="noopener noreferrer">
+              GitHub del Proyecto ↗
+            </a>
+            <a class="btn-primary-link" href="https://api-churn-mineria.onrender.com/" target="_blank" rel="noopener noreferrer">
+              API en Producción ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Panel opcional de Notas del Orador (tecla N) -->
+    <aside id="notesDrawer" class="notes-drawer hidden" aria-label="Notas del orador">
+      <div class="notes-head">
+        <strong>Notas del Orador</strong>
+        <button type="button" id="closeNotesBtn" title="Cerrar notas (N)">✕</button>
+      </div>
+      <p id="notesText"></p>
+    </aside>
+
+    <!-- Vista general de diapositivas (tecla G) -->
+    <div id="overviewModal" class="overview-modal hidden" role="dialog" aria-modal="true" aria-label="Mapa de diapositivas">
+      <div class="overview-header">
+        <strong>Mapa de Diapositivas</strong>
+        <button type="button" id="closeOverviewBtn">✕ Cerrar (Esc)</button>
+      </div>
+      <div id="overviewGrid" class="overview-grid"></div>
+    </div>
+
+    <!-- Barra discreta de controles tipo PPT -->
+    <footer class="controls-bar">
+      <div class="controls-left">
+        <span class="brand-mini">Churn API · S15</span>
+      </div>
+
+      <div class="controls-center">
+        <button type="button" id="prevBtn" class="nav-btn" title="Anterior (←)">←</button>
+        <span id="slideCounter" class="slide-counter">1 / 9</span>
+        <button type="button" id="nextBtn" class="nav-btn" title="Siguiente (→ / Espacio)">→</button>
+      </div>
+
+      <div class="controls-right">
+        <button type="button" id="notesBtn" class="tool-btn" title="Notas del orador (N)">Notas</button>
+        <button type="button" id="overviewBtn" class="tool-btn" title="Vista general (G)">Vista</button>
+        <button type="button" id="fullscreenBtn" class="tool-btn" title="Pantalla completa (F)">⛶</button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
